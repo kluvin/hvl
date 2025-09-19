@@ -8,7 +8,7 @@ import {
 const template = document.createElement("template");
 template.innerHTML = `
 <link rel="stylesheet" type="text/css"
-href="${import.meta.url.match(/.*\//)[0]}/taskbox.css"/>
+href="${new URL("taskbox.css", import.meta.url)}"/>
 <dialog>
 <!-- Modal content -->
 <span>&times;</span>

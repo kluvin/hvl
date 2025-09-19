@@ -20,7 +20,7 @@ template.innerHTML = html`
   <link
     rel="stylesheet"
     type="text/css"
-    href="${import.meta.url.match(/.*\//)[0]}/taskview.css"
+    href="${new URL("taskview.css", import.meta.url)}"
   />
   <h1>Tasks</h1>
   <div id="message"><p>Waiting for server data.</p></div>
