@@ -1,4 +1,9 @@
 import { createOptionElement } from "../utils/options.js";
+import {
+    registerComponent,
+    renderTemplate,
+    withElement,
+} from "../utils/dom.js";
 
 const template = document.createElement("template");
 template.innerHTML = `
@@ -39,7 +44,7 @@ class TaskList extends HTMLElement {
          * Fill inn rest of the code
          */
         this.attachShadow({ mode: "open" });
-        this.shadowRoot.appendChild(template.content.cloneNode(true));
+        renderTemplate(this.shadowRoot, template);
         this._container = this.shadowRoot.getElementById("tasklist");
         this._allstatuses = [];
         this._changestatusCallbacks = [];
@@ -94,11 +99,10 @@ class TaskList extends HTMLElement {
         /**
          * Fill inn the code
          */
-        const tbody = this._ensureTableBody();
-        if (!tbody) return;
-
-        const row = this._createRow(task);
-        this._insertRowAtTop(tbody, row);
+        withElement(this._ensureTableBody(), (tbody) => {
+            const row = this._createRow(task);
+            this._insertRowAtTop(tbody, row);
+        });
     }
 
     /**
@@ -109,12 +113,12 @@ class TaskList extends HTMLElement {
         /**
          * Fill inn the code
          */
-        const row = this._findRowById(task.id);
-        if (!row) return;
-        const cells = row.querySelectorAll("td");
-        if (cells.length >= 2) {
-            cells[1].textContent = task.status ?? "";
-        }
+        withElement(this._findRowById(task.id), (row) => {
+            const cells = row.querySelectorAll("td");
+            if (cells.length >= 2) {
+                cells[1].textContent = task.status ?? "";
+            }
+        });
     }
 
     /**
@@ -125,14 +129,14 @@ class TaskList extends HTMLElement {
         /**
          * Fill inn the code
          */
-        const tbody = this._getExistingTbody();
-        if (!tbody) return;
-        const row = this._findRowById(id);
-        if (!row) return;
-        row.remove();
-        if (tbody.children.length === 0) {
-            this._container.innerHTML = "";
-        }
+        withElement(this._getExistingTbody(), (tbody) => {
+            withElement(this._findRowById(id), (row) => {
+                row.remove();
+                if (tbody.children.length === 0) {
+                    this._container.innerHTML = "";
+                }
+            });
+        });
     }
 
     /**
@@ -177,27 +181,27 @@ class TaskList extends HTMLElement {
     }
 
     _populateStatusSelect(row, taskId) {
-        const select = row.querySelector("select");
-        if (!select) return;
-        if (Array.isArray(this._allstatuses)) {
-            this._allstatuses.forEach((status) => {
-                select.appendChild(createOptionElement(status));
-            });
-        }
-        select.addEventListener("change", () => {
-            const value = select.value;
-            if (value !== "0") {
-                this._changestatusCallbacks.forEach((cb) => cb(taskId, value));
-                select.value = "0";
+        withElement(row.querySelector("select"), (select) => {
+            if (Array.isArray(this._allstatuses)) {
+                this._allstatuses.forEach((status) => {
+                    select.appendChild(createOptionElement(status));
+                });
             }
+            select.addEventListener("change", () => {
+                const value = select.value;
+                if (value !== "0") {
+                    this._changestatusCallbacks.forEach((cb) => cb(taskId, value));
+                    select.value = "0";
+                }
+            });
         });
     }
 
     _wireDeleteButton(row, taskId) {
-        const btn = row.querySelector("button");
-        if (!btn) return;
-        btn.addEventListener("click", () => {
-            this._deletetaskCallbacks.forEach((cb) => cb(taskId));
+        withElement(row.querySelector("button"), (button) => {
+            button.addEventListener("click", () => {
+                this._deletetaskCallbacks.forEach((cb) => cb(taskId));
+            });
         });
     }
 
@@ -223,4 +227,4 @@ class TaskList extends HTMLElement {
         return table ? table.querySelector("tbody") : null;
     }
 }
-customElements.define('task-list', TaskList);
+registerComponent('task-list', TaskList);

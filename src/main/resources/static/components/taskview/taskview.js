@@ -7,6 +7,12 @@ import {
   getTasks,
   updateTaskStatus,
 } from "../utils/taskApi.js";
+import {
+  registerComponent,
+  renderTemplate,
+  withElement,
+} from "../utils/dom.js";
+
 const template = document.createElement("template");
 const html = (strings, ...values) => String.raw({ raw: strings }, ...values);
 
@@ -26,11 +32,12 @@ template.innerHTML = html`
   <!-- The Modal -->
   <task-box></task-box>
 `;
+
 class TaskView extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this.shadowRoot.appendChild(template.content.cloneNode(true));
+    renderTemplate(this.shadowRoot, template);
     this._message = this.shadowRoot.querySelector("#message p");
     this._button = this.shadowRoot.querySelector("#newtask button");
     this._tasklist = this.shadowRoot.querySelector("task-list");
@@ -95,9 +102,9 @@ class TaskView extends HTMLElement {
   }
 
   _enableNewTaskButton() {
-    if (this._button) {
-      this._button.disabled = false;
-    }
+    withElement(this._button, (button) => {
+      button.disabled = false;
+    });
   }
 
   async _loadTasks() {
@@ -124,15 +131,18 @@ class TaskView extends HTMLElement {
   }
 
   _wireNewTaskButton() {
-    if (!this._button) return;
-    this._button.addEventListener("click", () => {
-      this._taskbox.show();
+    withElement(this._button, (button) => {
+      button.addEventListener("click", () => {
+        this._taskbox.show();
+      });
     });
   }
 
   _wireTaskBoxCallback() {
-    this._taskbox.newtaskCallback((task) => {
-      this._postTask(task);
+    withElement(this._taskbox, (taskBox) => {
+      taskBox.newtaskCallback((task) => {
+        this._postTask(task);
+      });
     });
   }
 
@@ -142,14 +152,17 @@ class TaskView extends HTMLElement {
   }
 
   _updateMessageForCount(count) {
-    if (!this._message) return;
-    this._message.textContent =
-      count > 0 ? `Found ${count} tasks.` : "No tasks in list.";
+    withElement(this._message, (message) => {
+      message.textContent =
+        count > 0 ? `Found ${count} tasks.` : "No tasks in list.";
+    });
   }
 
   _closeTaskBox() {
-    this._taskbox.close();
+    withElement(this._taskbox, (taskBox) => {
+      taskBox.close();
+    });
   }
 }
 
-customElements.define("task-view", TaskView);
+registerComponent("task-view", TaskView);

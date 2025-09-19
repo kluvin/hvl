@@ -1,4 +1,9 @@
 import { createOptionElement } from "../utils/options.js";
+import {
+  registerComponent,
+  renderTemplate,
+  withElement,
+} from "../utils/dom.js";
 
 const template = document.createElement("template");
 template.innerHTML = `
@@ -23,7 +28,7 @@ class TaskBox extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this._renderTemplate();
+    renderTemplate(this.shadowRoot, template);
     this._cacheElements();
     this._callbacks = [];
     this._wireEvents();
@@ -31,20 +36,23 @@ class TaskBox extends HTMLElement {
 
   show() {
     if (this._input) this._input.value = "";
-    if (this._dialog && typeof this._dialog.showModal === "function") {
-      this._dialog.showModal();
-      if (this._input) this._input.focus();
-    }
+    withElement(this._dialog, (dialog) => {
+      if (typeof dialog.showModal === "function") {
+        dialog.showModal();
+        withElement(this._input, (input) => input.focus());
+      }
+    });
   }
 
   setStatuseslist(list) {
-    if (!this._select) return;
-    this._select.innerHTML = "";
-    if (Array.isArray(list)) {
-      list.forEach((status) => {
-        this._select.appendChild(createOptionElement(status));
-      });
-    }
+    withElement(this._select, (select) => {
+      select.innerHTML = "";
+      if (Array.isArray(list)) {
+        list.forEach((status) => {
+          select.appendChild(createOptionElement(status));
+        });
+      }
+    });
   }
 
   newtaskCallback(callback) {
@@ -54,13 +62,11 @@ class TaskBox extends HTMLElement {
   }
 
   close() {
-    if (this._dialog && typeof this._dialog.close === "function") {
-      this._dialog.close();
-    }
-  }
-
-  _renderTemplate() {
-    this.shadowRoot.appendChild(template.content.cloneNode(true));
+    withElement(this._dialog, (dialog) => {
+      if (typeof dialog.close === "function") {
+        dialog.close();
+      }
+    });
   }
 
   _cacheElements() {
@@ -78,23 +84,26 @@ class TaskBox extends HTMLElement {
   }
 
   _wireCloseControl() {
-    if (!this._close) return;
-    this._close.addEventListener("click", () => {
-      this.close();
+    withElement(this._close, (closeButton) => {
+      closeButton.addEventListener("click", () => {
+        this.close();
+      });
     });
   }
 
   _wireDialogCancel() {
-    if (!this._dialog) return;
-    this._dialog.addEventListener("cancel", () => {
-      this.close();
+    withElement(this._dialog, (dialog) => {
+      dialog.addEventListener("cancel", () => {
+        this.close();
+      });
     });
   }
 
   _wireSubmitAction() {
-    if (!this._submit) return;
-    this._submit.addEventListener("click", () => {
-      this._handleSubmit();
+    withElement(this._submit, (submitButton) => {
+      submitButton.addEventListener("click", () => {
+        this._handleSubmit();
+      });
     });
   }
 
@@ -110,4 +119,4 @@ class TaskBox extends HTMLElement {
   }
 }
 
-customElements.define("task-box", TaskBox);
+registerComponent("task-box", TaskBox);
