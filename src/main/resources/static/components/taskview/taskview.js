@@ -10,6 +10,7 @@ import {
 import {
   registerComponent,
   renderTemplate,
+  on,
   withElement,
 } from "../utils/dom.js";
 
@@ -122,11 +123,15 @@ class TaskView extends HTMLElement {
   }
 
   _wireTaskListCallbacks() {
-    this._tasklist.changestatusCallback((id, newStatus) => {
-      this._putStatus(id, newStatus);
-    });
-    this._tasklist.deletetaskCallback((id) => {
-      this._deleteTask(id);
+    withElement(this._tasklist, (taskList) => {
+      on(taskList, {
+        changestatus: ({ detail: { id, status } = {} }) => {
+          if (id !== undefined && status) this._putStatus(id, status);
+        },
+        deletetask: ({ detail: { id } = {} }) => {
+          if (id !== undefined) this._deleteTask(id);
+        },
+      });
     });
   }
 
@@ -140,8 +145,10 @@ class TaskView extends HTMLElement {
 
   _wireTaskBoxCallback() {
     withElement(this._taskbox, (taskBox) => {
-      taskBox.newtaskCallback((task) => {
-        this._postTask(task);
+      on(taskBox, {
+        newtask: ({ detail: { title, status } = {} }) => {
+          if (title && status) this._postTask({ title, status });
+        },
       });
     });
   }

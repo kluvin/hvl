@@ -2,6 +2,7 @@ import { createOptionElement } from "../utils/options.js";
 import {
   registerComponent,
   renderTemplate,
+  emit,
   withElement,
 } from "../utils/dom.js";
 
@@ -30,7 +31,6 @@ class TaskBox extends HTMLElement {
     this.attachShadow({ mode: "open" });
     renderTemplate(this.shadowRoot, template);
     this._cacheElements();
-    this._callbacks = [];
     this._wireEvents();
   }
 
@@ -53,12 +53,6 @@ class TaskBox extends HTMLElement {
         });
       }
     });
-  }
-
-  newtaskCallback(callback) {
-    if (typeof callback === "function") {
-      this._callbacks.push(callback);
-    }
   }
 
   close() {
@@ -111,11 +105,7 @@ class TaskBox extends HTMLElement {
     const title = (this._input?.value || "").trim();
     const status = this._select?.value || "";
     if (title === "" || status === "") return;
-    this._notifyCallbacks({ title, status });
-  }
-
-  _notifyCallbacks(task) {
-    this._callbacks.forEach((cb) => cb(task));
+    emit(this, "newtask", { title, status });
   }
 }
 
