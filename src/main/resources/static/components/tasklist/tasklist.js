@@ -124,10 +124,7 @@ class TaskList extends HTMLElement {
             select.addEventListener("change", () => {
                 const value = select.value;
                 if (value !== "0") {
-                    const ok = window.confirm(`Change status of task ${task.id} to ${value}?`);
-                    if (ok) {
                         this._changestatusCallbacks.forEach((cb) => cb(task.id, value));
-                    }
                     select.value = "0";
                 }
             });
@@ -136,10 +133,7 @@ class TaskList extends HTMLElement {
         const btn = row.querySelector("button");
         if (btn) {
             btn.addEventListener("click", () => {
-                const ok = window.confirm(`Delete task ${task.id}?`);
-                if (ok) {
-                    this._deletetaskCallbacks.forEach(cb => cb(task.id));
-                }
+                this._deletetaskCallbacks.forEach(cb => cb(task.id));
             });
         }
 

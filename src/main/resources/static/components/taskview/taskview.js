@@ -1,12 +1,14 @@
-import '../tasklist/tasklist.js';
-import '../taskbox/taskbox.js';
+import "../tasklist/tasklist.js";
+import "../taskbox/taskbox.js";
 const template = document.createElement("template");
-const html = (strings, ...values) =>
-  String.raw({ raw: strings }, ...values);
+const html = (strings, ...values) => String.raw({ raw: strings }, ...values);
 
 template.innerHTML = html`
-  <link rel="stylesheet" type="text/css"
-    href="${import.meta.url.match(/.*\//)[0]}/taskview.css"/>
+  <link
+    rel="stylesheet"
+    type="text/css"
+    href="${import.meta.url.match(/.*\//)[0]}/taskview.css"
+  />
   <h1>Tasks</h1>
   <div id="message"><p>Waiting for server data.</p></div>
   <div id="newtask">
@@ -14,7 +16,7 @@ template.innerHTML = html`
   </div>
   <!-- The task list -->
   <task-list></task-list>
-  <!-- The Modal --> 
+  <!-- The Modal -->
   <task-box></task-box>
 `;
 class TaskView extends HTMLElement {
@@ -36,9 +38,15 @@ class TaskView extends HTMLElement {
 
   async _load() {
     try {
-      const statusesRes = await fetch(`${this._serviceurl}/allstatuses`, { method: "GET" });
+      const statusesRes = await fetch(`${this._serviceurl}/allstatuses`, {
+        method: "GET",
+      });
       const statusesJson = await statusesRes.json();
-      if (statusesJson && statusesJson.responseStatus && Array.isArray(statusesJson.allstatuses)) {
+      if (
+        statusesJson &&
+        statusesJson.responseStatus &&
+        Array.isArray(statusesJson.allstatuses)
+      ) {
         this._tasklist.setStatuseslist(statusesJson.allstatuses);
         this._taskbox.setStatuseslist(statusesJson.allstatuses);
         if (this._button) this._button.disabled = false;
@@ -47,13 +55,23 @@ class TaskView extends HTMLElement {
     this._wireCallbacks();
 
     try {
-      const tasksRes = await fetch(`${this._serviceurl}/tasklist`, { method: "GET" });
+      const tasksRes = await fetch(`${this._serviceurl}/tasklist`, {
+        method: "GET",
+      });
       const tasksJson = await tasksRes.json();
-      if (tasksJson && tasksJson.responseStatus && Array.isArray(tasksJson.tasks)) {
+      if (
+        tasksJson &&
+        tasksJson.responseStatus &&
+        Array.isArray(tasksJson.tasks)
+      ) {
         for (const t of tasksJson.tasks) {
           this._tasklist.showTask(t);
         }
-        if (this._message) this._message.textContent = tasksJson.tasks.length > 0 ? `Found ${tasksJson.tasks.length} tasks.` : "No tasks in list.";
+        if (this._message)
+          this._message.textContent =
+            tasksJson.tasks.length > 0
+              ? `Found ${tasksJson.tasks.length} tasks.`
+              : "No tasks in list.";
       }
     } catch (e) {}
   }
@@ -82,7 +100,7 @@ class TaskView extends HTMLElement {
       const res = await fetch(`${this._serviceurl}/task/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status }),
       });
       const json = await res.json();
       if (json && json.responseStatus) {
@@ -93,12 +111,16 @@ class TaskView extends HTMLElement {
 
   async _deleteTask(id) {
     try {
-      const res = await fetch(`${this._serviceurl}/task/${id}`, { method: "DELETE" });
+      const res = await fetch(`${this._serviceurl}/task/${id}`, {
+        method: "DELETE",
+      });
       const json = await res.json();
       if (json && json.responseStatus) {
         this._tasklist.removeTask(id);
         const n = this._tasklist.getNumtasks();
-        if (this._message) this._message.textContent = n > 0 ? `Found ${n} tasks.` : "No tasks in list.";
+        if (this._message)
+          this._message.textContent =
+            n > 0 ? `Found ${n} tasks.` : "No tasks in list.";
       }
     } catch (e) {}
   }
@@ -108,13 +130,15 @@ class TaskView extends HTMLElement {
       const res = await fetch(`${this._serviceurl}/task`, {
         method: "POST",
         headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify(task)
+        body: JSON.stringify(task),
       });
       const json = await res.json();
       if (json && json.responseStatus && json.task) {
         this._tasklist.showTask(json.task);
         const n = this._tasklist.getNumtasks();
-        if (this._message) this._message.textContent = n > 0 ? `Found ${n} tasks.` : "No tasks in list.";
+        if (this._message)
+          this._message.textContent =
+            n > 0 ? `Found ${n} tasks.` : "No tasks in list.";
         this._taskbox.close();
       }
     } catch (e) {}
