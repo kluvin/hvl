@@ -2,6 +2,7 @@ import { createOptionElement } from "../utils/options.js";
 import {
   registerComponent,
   renderTemplate,
+  emit,
   withElement,
 } from "../utils/dom.js";
 
@@ -48,8 +49,6 @@ class TaskList extends HTMLElement {
     renderTemplate(this.shadowRoot, template);
     this._container = this.shadowRoot.getElementById("tasklist");
     this._allstatuses = [];
-    this._changestatusCallbacks = [];
-    this._deletetaskCallbacks = [];
   }
 
   /**
@@ -61,34 +60,6 @@ class TaskList extends HTMLElement {
      * Fill inn the code
      */
     this._allstatuses = Array.isArray(allstatuses) ? allstatuses.slice() : [];
-  }
-
-  /**
-   * Add callback to run on change on change of status of a task, i.e. on change in the SELECT element
-   * @public
-   * @param {function} callback
-   */
-  changestatusCallback(callback) {
-    /**
-     * Fill inn the code
-     */
-    if (typeof callback === "function") {
-      this._changestatusCallbacks.push(callback);
-    }
-  }
-
-  /**
-   * Add callback to run on click on delete button of a task
-   * @public
-   * @param {function} callback
-   */
-  deletetaskCallback(callback) {
-    /**
-     * Fill inn the code
-     */
-    if (typeof callback === "function") {
-      this._deletetaskCallbacks.push(callback);
-    }
   }
 
   /**
@@ -191,7 +162,7 @@ class TaskList extends HTMLElement {
       select.addEventListener("change", () => {
         const value = select.value;
         if (value !== "0") {
-          this._changestatusCallbacks.forEach((cb) => cb(taskId, value));
+          emit(this, "changestatus", { id: taskId, status: value });
           select.value = "0";
         }
       });
@@ -201,7 +172,7 @@ class TaskList extends HTMLElement {
   _wireDeleteButton(row, taskId) {
     withElement(row.querySelector("button"), (button) => {
       button.addEventListener("click", () => {
-        this._deletetaskCallbacks.forEach((cb) => cb(taskId));
+        emit(this, "deletetask", { id: taskId });
       });
     });
   }

@@ -18,3 +18,24 @@ export function registerComponent(tagName, constructor) {
     customElements.define(tagName, constructor);
   }
 }
+
+export function emit(target, type, detail = {}) {
+  if (!target || typeof target.dispatchEvent !== "function") return;
+  if (typeof type !== "string" || type.length === 0) return;
+  target.dispatchEvent(
+    new CustomEvent(type, {
+      bubbles: true,
+      composed: true,
+      detail,
+    })
+  );
+}
+
+export function on(target, listeners = {}) {
+  if (!target || typeof target.addEventListener !== "function") return;
+  Object.entries(listeners).forEach(([type, handler]) => {
+    if (typeof type === "string" && typeof handler === "function") {
+      target.addEventListener(type, handler);
+    }
+  });
+}
