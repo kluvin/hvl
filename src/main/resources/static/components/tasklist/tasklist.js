@@ -1,3 +1,5 @@
+import { createOptionElement } from "../utils/options.js";
+
 const template = document.createElement("template");
 template.innerHTML = `
     <link rel="stylesheet" type="text/css" href="${import.meta.url.match(/.*\//)[0]}/tasklist.css"/>
@@ -92,56 +94,11 @@ class TaskList extends HTMLElement {
         /**
          * Fill inn the code
          */
-        let table = this._container.querySelector("table");
-        let tbody = table ? table.querySelector("tbody") : null;
-        if (!table || !tbody) {
-            const frag = tasktable.content.cloneNode(true);
-            this._container.appendChild(frag);
-            table = this._container.querySelector("table");
-            tbody = table ? table.querySelector("tbody") : null;
-        }
+        const tbody = this._ensureTableBody();
+        if (!tbody) return;
 
-        const rowFragment = taskrow.content.cloneNode(true);
-        const row = rowFragment.querySelector("tr");
-        row.dataset.id = String(task.id);
-
-        const cells = row.querySelectorAll("td");
-        if (cells.length >= 2) {
-            cells[0].textContent = task.title ?? "";
-            cells[1].textContent = task.status ?? "";
-        }
-
-        const select = row.querySelector("select");
-        if (select) {
-            if (Array.isArray(this._allstatuses)) {
-                this._allstatuses.forEach((s) => {
-                    const opt = document.createElement("option");
-                    opt.value = String(s);
-                    opt.textContent = String(s);
-                    select.appendChild(opt);
-                });
-            }
-            select.addEventListener("change", () => {
-                const value = select.value;
-                if (value !== "0") {
-                        this._changestatusCallbacks.forEach((cb) => cb(task.id, value));
-                    select.value = "0";
-                }
-            });
-        }
-
-        const btn = row.querySelector("button");
-        if (btn) {
-            btn.addEventListener("click", () => {
-                this._deletetaskCallbacks.forEach(cb => cb(task.id));
-            });
-        }
-
-        if (tbody.firstChild) {
-            tbody.insertBefore(row, tbody.firstChild);
-        } else {
-            tbody.appendChild(row);
-        }
+        const row = this._createRow(task);
+        this._insertRowAtTop(tbody, row);
     }
 
     /**
@@ -152,11 +109,7 @@ class TaskList extends HTMLElement {
         /**
          * Fill inn the code
          */
-        const table = this._container.querySelector("table");
-        const tbody = table ? table.querySelector("tbody") : null;
-        if (!tbody) return;
-        const targetId = String(task.id);
-        const row = Array.from(tbody.querySelectorAll("tr")).find((tr) => tr.dataset.id === targetId);
+        const row = this._findRowById(task.id);
         if (!row) return;
         const cells = row.querySelectorAll("td");
         if (cells.length >= 2) {
@@ -172,11 +125,9 @@ class TaskList extends HTMLElement {
         /**
          * Fill inn the code
          */
-        const table = this._container.querySelector("table");
-        const tbody = table ? table.querySelector("tbody") : null;
+        const tbody = this._getExistingTbody();
         if (!tbody) return;
-        const targetId = String(id);
-        const row = Array.from(tbody.querySelectorAll("tr")).find((tr) => tr.dataset.id === targetId);
+        const row = this._findRowById(id);
         if (!row) return;
         row.remove();
         if (tbody.children.length === 0) {
@@ -192,9 +143,84 @@ class TaskList extends HTMLElement {
         /**
          * Fill inn the code
          */
-        const table = this._container.querySelector("table");
-        const tbody = table ? table.querySelector("tbody") : null;
+        const tbody = this._getExistingTbody();
         return tbody ? tbody.children.length : 0;
+    }
+
+    _ensureTableBody() {
+        let table = this._container.querySelector("table");
+        let tbody = table ? table.querySelector("tbody") : null;
+        if (tbody) return tbody;
+        const fragment = tasktable.content.cloneNode(true);
+        this._container.appendChild(fragment);
+        table = this._container.querySelector("table");
+        return table ? table.querySelector("tbody") : null;
+    }
+
+    _createRow(task) {
+        const fragment = taskrow.content.cloneNode(true);
+        const row = fragment.querySelector("tr");
+        const taskIdString = String(task.id);
+        row.dataset.id = taskIdString;
+        this._fillRowCells(row, task);
+        this._populateStatusSelect(row, task.id);
+        this._wireDeleteButton(row, task.id);
+        return row;
+    }
+
+    _fillRowCells(row, task) {
+        const cells = row.querySelectorAll("td");
+        if (cells.length >= 2) {
+            cells[0].textContent = task.title ?? "";
+            cells[1].textContent = task.status ?? "";
+        }
+    }
+
+    _populateStatusSelect(row, taskId) {
+        const select = row.querySelector("select");
+        if (!select) return;
+        if (Array.isArray(this._allstatuses)) {
+            this._allstatuses.forEach((status) => {
+                select.appendChild(createOptionElement(status));
+            });
+        }
+        select.addEventListener("change", () => {
+            const value = select.value;
+            if (value !== "0") {
+                this._changestatusCallbacks.forEach((cb) => cb(taskId, value));
+                select.value = "0";
+            }
+        });
+    }
+
+    _wireDeleteButton(row, taskId) {
+        const btn = row.querySelector("button");
+        if (!btn) return;
+        btn.addEventListener("click", () => {
+            this._deletetaskCallbacks.forEach((cb) => cb(taskId));
+        });
+    }
+
+    _insertRowAtTop(tbody, row) {
+        if (tbody.firstChild) {
+            tbody.insertBefore(row, tbody.firstChild);
+        } else {
+            tbody.appendChild(row);
+        }
+    }
+
+    _findRowById(id) {
+        const tbody = this._getExistingTbody();
+        if (!tbody) return null;
+        const targetId = String(id);
+        return Array.from(tbody.querySelectorAll("tr")).find(
+            (tr) => tr.dataset.id === targetId,
+        ) || null;
+    }
+
+    _getExistingTbody() {
+        const table = this._container.querySelector("table");
+        return table ? table.querySelector("tbody") : null;
     }
 }
 customElements.define('task-list', TaskList);

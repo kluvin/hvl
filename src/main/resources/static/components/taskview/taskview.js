@@ -1,5 +1,12 @@
 import "../tasklist/tasklist.js";
 import "../taskbox/taskbox.js";
+import {
+  createTask,
+  deleteTask,
+  getStatuses,
+  getTasks,
+  updateTaskStatus,
+} from "../utils/taskApi.js";
 const template = document.createElement("template");
 const html = (strings, ...values) => String.raw({ raw: strings }, ...values);
 
@@ -37,111 +44,111 @@ class TaskView extends HTMLElement {
   }
 
   async _load() {
-    try {
-      const statusesRes = await fetch(`${this._serviceurl}/allstatuses`, {
-        method: "GET",
-      });
-      const statusesJson = await statusesRes.json();
-      if (
-        statusesJson &&
-        statusesJson.responseStatus &&
-        Array.isArray(statusesJson.allstatuses)
-      ) {
-        this._tasklist.setStatuseslist(statusesJson.allstatuses);
-        this._taskbox.setStatuseslist(statusesJson.allstatuses);
-        if (this._button) this._button.disabled = false;
-      }
-    } catch (e) {}
+    await this._loadStatuses();
     this._wireCallbacks();
-
-    try {
-      const tasksRes = await fetch(`${this._serviceurl}/tasklist`, {
-        method: "GET",
-      });
-      const tasksJson = await tasksRes.json();
-      if (
-        tasksJson &&
-        tasksJson.responseStatus &&
-        Array.isArray(tasksJson.tasks)
-      ) {
-        for (const t of tasksJson.tasks) {
-          this._tasklist.showTask(t);
-        }
-        if (this._message)
-          this._message.textContent =
-            tasksJson.tasks.length > 0
-              ? `Found ${tasksJson.tasks.length} tasks.`
-              : "No tasks in list.";
-      }
-    } catch (e) {}
+    await this._loadTasks();
   }
 
   _wireCallbacks() {
     if (this._wired) return;
     this._wired = true;
+    this._wireTaskListCallbacks();
+    this._wireNewTaskButton();
+    this._wireTaskBoxCallback();
+  }
+
+  async _putStatus(id, status) {
+    const success = await updateTaskStatus(this._serviceurl, id, status);
+    if (success) {
+      this._tasklist.updateTask({ id, status });
+    }
+  }
+
+  async _deleteTask(id) {
+    const success = await deleteTask(this._serviceurl, id);
+    if (success) {
+      this._tasklist.removeTask(id);
+      this._refreshTaskCount();
+    }
+  }
+
+  async _postTask(task) {
+    const createdTask = await createTask(this._serviceurl, task);
+    if (createdTask) {
+      this._tasklist.showTask(createdTask);
+      this._refreshTaskCount();
+      this._closeTaskBox();
+    }
+  }
+
+  async _loadStatuses() {
+    const statuses = await getStatuses(this._serviceurl);
+    if (statuses) {
+      this._applyStatuses(statuses);
+    }
+  }
+
+  _applyStatuses(statuses) {
+    this._tasklist.setStatuseslist(statuses);
+    this._taskbox.setStatuseslist(statuses);
+    this._enableNewTaskButton();
+  }
+
+  _enableNewTaskButton() {
+    if (this._button) {
+      this._button.disabled = false;
+    }
+  }
+
+  async _loadTasks() {
+    const tasks = await getTasks(this._serviceurl);
+    if (tasks) {
+      this._displayTasks(tasks);
+    }
+  }
+
+  _displayTasks(tasks) {
+    tasks.forEach((task) => {
+      this._tasklist.showTask(task);
+    });
+    this._updateMessageForCount(tasks.length);
+  }
+
+  _wireTaskListCallbacks() {
     this._tasklist.changestatusCallback((id, newStatus) => {
       this._putStatus(id, newStatus);
     });
     this._tasklist.deletetaskCallback((id) => {
       this._deleteTask(id);
     });
-    if (this._button) {
-      this._button.addEventListener("click", () => {
-        this._taskbox.show();
-      });
-    }
+  }
+
+  _wireNewTaskButton() {
+    if (!this._button) return;
+    this._button.addEventListener("click", () => {
+      this._taskbox.show();
+    });
+  }
+
+  _wireTaskBoxCallback() {
     this._taskbox.newtaskCallback((task) => {
       this._postTask(task);
     });
   }
 
-  async _putStatus(id, status) {
-    try {
-      const res = await fetch(`${this._serviceurl}/task/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({ status }),
-      });
-      const json = await res.json();
-      if (json && json.responseStatus) {
-        this._tasklist.updateTask({ id, status });
-      }
-    } catch (e) {}
+  _refreshTaskCount() {
+    const total = this._tasklist.getNumtasks();
+    this._updateMessageForCount(total);
   }
 
-  async _deleteTask(id) {
-    try {
-      const res = await fetch(`${this._serviceurl}/task/${id}`, {
-        method: "DELETE",
-      });
-      const json = await res.json();
-      if (json && json.responseStatus) {
-        this._tasklist.removeTask(id);
-        const n = this._tasklist.getNumtasks();
-        if (this._message)
-          this._message.textContent =
-            n > 0 ? `Found ${n} tasks.` : "No tasks in list.";
-      }
-    } catch (e) {}
+  _updateMessageForCount(count) {
+    if (!this._message) return;
+    this._message.textContent =
+      count > 0 ? `Found ${count} tasks.` : "No tasks in list.";
   }
 
-  async _postTask(task) {
-    try {
-      const res = await fetch(`${this._serviceurl}/task`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify(task),
-      });
-      const json = await res.json();
-      if (json && json.responseStatus && json.task) {
-        this._tasklist.showTask(json.task);
-        const n = this._tasklist.getNumtasks();
-        if (this._message)
-          this._message.textContent =
-            n > 0 ? `Found ${n} tasks.` : "No tasks in list.";
-        this._taskbox.close();
-      }
-    } catch (e) {}
+  _closeTaskBox() {
+    this._taskbox.close();
   }
 }
 

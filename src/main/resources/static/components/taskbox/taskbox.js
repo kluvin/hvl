@@ -1,3 +1,5 @@
+import { createOptionElement } from "../utils/options.js";
+
 const template = document.createElement("template");
 template.innerHTML = `
 <link rel="stylesheet" type="text/css"
@@ -21,31 +23,10 @@ class TaskBox extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this.shadowRoot.appendChild(template.content.cloneNode(true));
-
-    this._dialog = this.shadowRoot.querySelector("dialog");
-    this._close = this.shadowRoot.querySelector("span");
-    this._input = this.shadowRoot.querySelector("input");
-    this._select = this.shadowRoot.querySelector("select");
-    this._submit = this.shadowRoot.querySelector("button[type=submit]");
-
+    this._renderTemplate();
+    this._cacheElements();
     this._callbacks = [];
-
-    if (this._close) {
-      this._close.addEventListener("click", () => { this.close(); });
-    }
-    if (this._dialog) {
-      this._dialog.addEventListener("cancel", () => { this.close(); });
-    }
-    if (this._submit) {
-      this._submit.addEventListener("click", () => {
-        const title = (this._input?.value || "").trim();
-        const status = this._select?.value || "";
-        if (title === "" || status === "") return;
-        const task = { title, status };
-        this._callbacks.forEach((cb) => cb(task));
-      });
-    }
+    this._wireEvents();
   }
 
   show() {
@@ -60,11 +41,8 @@ class TaskBox extends HTMLElement {
     if (!this._select) return;
     this._select.innerHTML = "";
     if (Array.isArray(list)) {
-      list.forEach((s) => {
-        const opt = document.createElement("option");
-        opt.value = String(s);
-        opt.textContent = String(s);
-        this._select.appendChild(opt);
+      list.forEach((status) => {
+        this._select.appendChild(createOptionElement(status));
       });
     }
   }
@@ -80,8 +58,56 @@ class TaskBox extends HTMLElement {
       this._dialog.close();
     }
   }
+
+  _renderTemplate() {
+    this.shadowRoot.appendChild(template.content.cloneNode(true));
+  }
+
+  _cacheElements() {
+    this._dialog = this.shadowRoot.querySelector("dialog");
+    this._close = this.shadowRoot.querySelector("span");
+    this._input = this.shadowRoot.querySelector("input");
+    this._select = this.shadowRoot.querySelector("select");
+    this._submit = this.shadowRoot.querySelector("button[type=submit]");
+  }
+
+  _wireEvents() {
+    this._wireCloseControl();
+    this._wireDialogCancel();
+    this._wireSubmitAction();
+  }
+
+  _wireCloseControl() {
+    if (!this._close) return;
+    this._close.addEventListener("click", () => {
+      this.close();
+    });
+  }
+
+  _wireDialogCancel() {
+    if (!this._dialog) return;
+    this._dialog.addEventListener("cancel", () => {
+      this.close();
+    });
+  }
+
+  _wireSubmitAction() {
+    if (!this._submit) return;
+    this._submit.addEventListener("click", () => {
+      this._handleSubmit();
+    });
+  }
+
+  _handleSubmit() {
+    const title = (this._input?.value || "").trim();
+    const status = this._select?.value || "";
+    if (title === "" || status === "") return;
+    this._notifyCallbacks({ title, status });
+  }
+
+  _notifyCallbacks(task) {
+    this._callbacks.forEach((cb) => cb(task));
+  }
 }
 
 customElements.define("task-box", TaskBox);
-
-
