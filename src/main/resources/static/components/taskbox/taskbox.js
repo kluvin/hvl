@@ -25,28 +25,37 @@ placeholder="Task title" autofocus/>
 `;
 
 class TaskBox extends HTMLElement {
+	#shadow;
+	#dialog;
+	#close;
+    #input;
+    #select;
+    #submit;
+	#callbacks = [];
+		
   constructor() {
-    super();
-    this.attachShadow({ mode: "open" });
-    renderTemplate(this.shadowRoot, template);
-    this._cacheElements();
-    this._callbacks = [];
-    this._wireEvents();
+	super();
+	this.#shadow = this.attachShadow({ mode: "closed" });
+    renderTemplate(this.#shadow, template);
+    this.#cacheElements();
+    this.#wireEvents();
   }
 
   show() {
-    if (this._input) this._input.value = "";
-    withElement(this._dialog, (dialog) => {
+    withElement(this.#input, (input) => { this.#input.value = ""});
+    withElement(this.#dialog, (dialog) => {
+	// withElement() checks for null already 
       if (typeof dialog.showModal === "function") {
         dialog.showModal();
-        withElement(this._input, (input) => input.focus());
+        withElement(this.#input, (input) => input.focus());
       }
     });
   }
 
   setStatuseslist(list) {
-    withElement(this._select, (select) => {
-      select.innerHTML = "";
+	// withElement() checks for null already 
+    withElement(this.#select, (select) => {
+      select.innerText = "";
       if (Array.isArray(list)) {
         list.forEach((status) => {
           select.appendChild(createOptionElement(status));
@@ -57,65 +66,68 @@ class TaskBox extends HTMLElement {
 
   newtaskCallback(callback) {
     if (typeof callback === "function") {
-      this._callbacks.push(callback);
+      this.#callbacks.push(callback);
     }
   }
 
   close() {
-    withElement(this._dialog, (dialog) => {
+    withElement(this.#dialog, (dialog) => {
       if (typeof dialog.close === "function") {
         dialog.close();
       }
     });
+	
+	if (this.#input) this.#input.value = "";
+	if (this.#select) this.#select.selectedIndex = 0;
   }
 
-  _cacheElements() {
-    this._dialog = this.shadowRoot.querySelector("dialog");
-    this._close = this.shadowRoot.querySelector("span");
-    this._input = this.shadowRoot.querySelector("input");
-    this._select = this.shadowRoot.querySelector("select");
-    this._submit = this.shadowRoot.querySelector("button[type=submit]");
+  #cacheElements() {
+    this.#dialog = this.#shadow.querySelector("dialog");
+    this.#close = this.#shadow.querySelector("span");
+    this.#input = this.#shadow.querySelector("input");
+    this.#select = this.#shadow.querySelector("select");
+    this.#submit = this.#shadow.querySelector("button[type=submit]");
   }
 
-  _wireEvents() {
-    this._wireCloseControl();
-    this._wireDialogCancel();
-    this._wireSubmitAction();
+  #wireEvents() {
+    this.#wireCloseControl();
+    this.#wireDialogCancel();
+    this.#wireSubmitAction();
   }
 
-  _wireCloseControl() {
-    withElement(this._close, (closeButton) => {
+  #wireCloseControl() {
+    withElement(this.#close, (closeButton) => {
       closeButton.addEventListener("click", () => {
         this.close();
       });
     });
   }
 
-  _wireDialogCancel() {
-    withElement(this._dialog, (dialog) => {
+  #wireDialogCancel() {
+    withElement(this.#dialog, (dialog) => {
       dialog.addEventListener("cancel", () => {
         this.close();
       });
     });
   }
 
-  _wireSubmitAction() {
-    withElement(this._submit, (submitButton) => {
+  #wireSubmitAction() {
+    withElement(this.#submit, (submitButton) => {
       submitButton.addEventListener("click", () => {
-        this._handleSubmit();
+        this.#handleSubmit();
       });
     });
   }
 
-  _handleSubmit() {
-    const title = (this._input?.value || "").trim();
-    const status = this._select?.value || "";
+  #handleSubmit() {
+    const title = (this.#input?.value || "").trim();
+    const status = this.#select?.value || "";
     if (title === "" || status === "") return;
-    this._notifyCallbacks({ title, status });
+    this.#notifyCallbacks({ title, status });
   }
 
-  _notifyCallbacks(task) {
-    this._callbacks.forEach((cb) => cb(task));
+  #notifyCallbacks(task) {
+    this.#callbacks.forEach((cb) => cb(task));
   }
 }
 
