@@ -34,132 +34,141 @@ template.innerHTML = html`
 `;
 
 class TaskView extends HTMLElement {
+	#message;
+	#button;
+	#tasklist;
+	#taskbox;
+	#serviceurl;
+	#wired; 
+	
   constructor() {
     super();
-    this.attachShadow({ mode: "open" });
-    renderTemplate(this.shadowRoot, template);
-    this._message = this.shadowRoot.querySelector("#message p");
-    this._button = this.shadowRoot.querySelector("#newtask button");
-    this._tasklist = this.shadowRoot.querySelector("task-list");
-    this._taskbox = this.shadowRoot.querySelector("task-box");
-    this._serviceurl = this.getAttribute("data-serviceurl") || "./api";
-    this._wired = false;
+	const shadow = this.attachShadow({mode: "closed"});
+    renderTemplate(shadow, template);
+    this.#message = shadow.querySelector("#message p");
+    this.#button = shadow.querySelector("#newtask button");
+    this.#tasklist = shadow.querySelector("task-list");
+    this.#taskbox = shadow.querySelector("task-box");
+    this.#serviceurl = this.getAttribute("data-serviceurl") || "./api";
+    this.#wired = false;
   }
 
   connectedCallback() {
-    this._load();
+    this.#load();
   }
 
-  async _load() {
-    await this._loadStatuses();
-    this._wireCallbacks();
-    await this._loadTasks();
+  async #load() {
+    await this.#loadStatuses();
+    this.#wireCallbacks();
+    await this.#loadTasks();
   }
 
-  _wireCallbacks() {
-    if (this._wired) return;
-    this._wired = true;
-    this._wireTaskListCallbacks();
-    this._wireNewTaskButton();
-    this._wireTaskBoxCallback();
+  #wireCallbacks() {
+    if (this.#wired !== null) return;
+    this.#wired = true;
+    this.#wireTaskListCallbacks();
+    this.#wireNewTaskButton();
+    this.#wireTaskBoxCallback();
   }
 
-  async _putStatus(id, status) {
-    const success = await updateTaskStatus(this._serviceurl, id, status);
+  async #putStatus(id, status) {
+    if (!confirm("Are you sure you want to update this task?")) return;
+    const success = await updateTaskStatus(this.#serviceurl, id, status);
     if (success) {
-      this._tasklist.updateTask({ id, status });
+      this.#tasklist.updateTask({ id, status });
     }
   }
 
-  async _deleteTask(id) {
-    const success = await deleteTask(this._serviceurl, id);
-    if (success) {
-      this._tasklist.removeTask(id);
-      this._refreshTaskCount();
+  async #deleteTask(id) {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+    const success = await deleteTask(this.#serviceurl, id);
+    if (success !== null) {
+      this.#tasklist.removeTask(id);
+      this.#refreshTaskCount();
     }
   }
 
-  async _postTask(task) {
-    const createdTask = await createTask(this._serviceurl, task);
-    if (createdTask) {
-      this._tasklist.showTask(createdTask);
-      this._refreshTaskCount();
-      this._closeTaskBox();
+  async #postTask(task) {
+    const createdTask = await createTask(this.#serviceurl, task);
+    if (createdTask !== null) {
+      this.#tasklist.showTask(createdTask);
+      this.#refreshTaskCount();
+      this.#closeTaskBox();
     }
   }
 
-  async _loadStatuses() {
-    const statuses = await getStatuses(this._serviceurl);
+  async #loadStatuses() {
+    const statuses = await getStatuses(this.#serviceurl);
     if (statuses) {
-      this._applyStatuses(statuses);
+      this.#applyStatuses(statuses);
     }
   }
 
-  _applyStatuses(statuses) {
-    this._tasklist.setStatuseslist(statuses);
-    this._taskbox.setStatuseslist(statuses);
-    this._enableNewTaskButton();
+  #applyStatuses(statuses) {
+    this.#tasklist.setStatuseslist(statuses);
+    this.#taskbox.setStatuseslist(statuses);
+    this.#enableNewTaskButton();
   }
 
-  _enableNewTaskButton() {
-    withElement(this._button, (button) => {
+  #enableNewTaskButton() {
+    withElement(this.#button, (button) => {
       button.disabled = false;
     });
   }
 
-  async _loadTasks() {
-    const tasks = await getTasks(this._serviceurl);
-    if (tasks) {
-      this._displayTasks(tasks);
+  async #loadTasks() {
+    const tasks = await getTasks(this.#serviceurl);
+    if (tasks !== null) {
+      this.#displayTasks(tasks);
     }
   }
 
-  _displayTasks(tasks) {
+  #displayTasks(tasks) {
     tasks.forEach((task) => {
-      this._tasklist.showTask(task);
+      this.#tasklist.showTask(task);
     });
-    this._updateMessageForCount(tasks.length);
+    this.#updateMessageForCount(tasks.length);
   }
 
-  _wireTaskListCallbacks() {
-    this._tasklist.changestatusCallback((id, newStatus) => {
-      this._putStatus(id, newStatus);
+  #wireTaskListCallbacks() {
+    this.#tasklist.changestatusCallback((id, newStatus) => {
+      this.#putStatus(id, newStatus);
     });
-    this._tasklist.deletetaskCallback((id) => {
-      this._deleteTask(id);
+    this.#tasklist.deletetaskCallback((id) => {
+      this.#deleteTask(id);
     });
   }
 
-  _wireNewTaskButton() {
-    withElement(this._button, (button) => {
+  #wireNewTaskButton() {
+    withElement(this.#button, (button) => {
       button.addEventListener("click", () => {
-        this._taskbox.show();
+        this.#taskbox.show();
       });
     });
   }
 
-  _wireTaskBoxCallback() {
-    withElement(this._taskbox, (taskBox) => {
+  #wireTaskBoxCallback() {
+    withElement(this.#taskbox, (taskBox) => {
       taskBox.newtaskCallback((task) => {
-        this._postTask(task);
+        this.#postTask(task);
       });
     });
   }
 
-  _refreshTaskCount() {
-    const total = this._tasklist.getNumtasks();
-    this._updateMessageForCount(total);
+  #refreshTaskCount() {
+    const total = this.#tasklist.getNumtasks();
+    this.#updateMessageForCount(total);
   }
 
-  _updateMessageForCount(count) {
-    withElement(this._message, (message) => {
+  #updateMessageForCount(count) {
+    withElement(this.#message, (message) => {
       message.textContent =
         count > 0 ? `Found ${count} tasks.` : "No tasks in list.";
     });
   }
 
-  _closeTaskBox() {
-    withElement(this._taskbox, (taskBox) => {
+  #closeTaskBox() {
+    withElement(this.#taskbox, (taskBox) => {
       taskBox.close();
     });
   }
