@@ -1,11 +1,9 @@
 export function renderTemplate(shadowRoot, template) {
-  if (!shadowRoot || !template) return;
-  const content = template.content ?? null;
-  const fragment = content ? content.cloneNode(true) : null;
-  if (fragment) {
-    shadowRoot.appendChild(fragment);
-  }
+  if (!(shadowRoot instanceof ShadowRoot) || !(template instanceof HTMLTemplateElement)) return;
+  const fragment = template.content.cloneNode(true);
+  shadowRoot.appendChild(fragment);
 }
+
 
 export function withElement(element, callback) {
   if (!element || typeof callback !== "function") return null;

@@ -38,18 +38,20 @@ taskrow.innerHTML = `
  * Manage view with list of tasks
  */
 class TaskList extends HTMLElement {
+	#container;
+	#allstatuses = [];
+	#changestatusCallbacks = [];
+	#deletetaskCallbacks = [];
+	
   constructor() {
     super();
 
     /**
      * Fill inn rest of the code
      */
-    this.attachShadow({ mode: "open" });
-    renderTemplate(this.shadowRoot, template);
-    this._container = this.shadowRoot.getElementById("tasklist");
-    this._allstatuses = [];
-    this._changestatusCallbacks = [];
-    this._deletetaskCallbacks = [];
+	const shadow = this.attachShadow({ mode: "closed" });
+	renderTemplate(shadow, template);
+	this.#container = shadow.getElementById("tasklist");
   }
 
   /**
@@ -60,7 +62,7 @@ class TaskList extends HTMLElement {
     /**
      * Fill inn the code
      */
-    this._allstatuses = Array.isArray(allstatuses) ? allstatuses.slice() : [];
+    this.#allstatuses = Array.isArray(allstatuses) ? allstatuses.slice() : [];
   }
 
   /**
@@ -73,7 +75,7 @@ class TaskList extends HTMLElement {
      * Fill inn the code
      */
     if (typeof callback === "function") {
-      this._changestatusCallbacks.push(callback);
+      this.#changestatusCallbacks.push(callback);
     }
   }
 
@@ -87,7 +89,7 @@ class TaskList extends HTMLElement {
      * Fill inn the code
      */
     if (typeof callback === "function") {
-      this._deletetaskCallbacks.push(callback);
+      this.#deletetaskCallbacks.push(callback);
     }
   }
 
@@ -100,9 +102,9 @@ class TaskList extends HTMLElement {
     /**
      * Fill inn the code
      */
-    withElement(this._ensureTableBody(), (tbody) => {
-      const row = this._createRow(task);
-      this._insertRowAtTop(tbody, row);
+    withElement(this.#ensureTableBody(), (tbody) => {
+      const row = this.#createRow(task);
+      this.#insertRowAtTop(tbody, row);
     });
   }
 
@@ -114,7 +116,7 @@ class TaskList extends HTMLElement {
     /**
      * Fill inn the code
      */
-    withElement(this._findRowById(task.id), (row) => {
+    withElement(this.#findRowById(task.id), (row) => {
       const cells = row.querySelectorAll("td");
       if (cells.length >= 2) {
         cells[1].textContent = task.status ?? "";
@@ -130,12 +132,12 @@ class TaskList extends HTMLElement {
     /**
      * Fill inn the code
      */
-    withElement(this._getExistingTbody(), (tbody) => {
-      withElement(this._findRowById(id), (row) => {
+    withElement(this.#getExistingTbody(), (tbody) => {
+      withElement(this.#findRowById(id), (row) => {
         row.remove();
-        if (tbody.children.length === 0) {
-          this._container.innerHTML = "";
-        }
+		if (tbody.rows.length === 0) {
+		  this.#container.innerHTML = "";
+		}
       });
     });
   }
@@ -148,32 +150,32 @@ class TaskList extends HTMLElement {
     /**
      * Fill inn the code
      */
-    const tbody = this._getExistingTbody();
-    return tbody ? tbody.children.length : 0;
-  }
+	const tbody = this.#getExistingTbody();
+	return tbody ? tbody.rows.length : 0;
+	}
 
-  _ensureTableBody() {
-    let table = this._container.querySelector("table");
+  #ensureTableBody() {
+    let table = this.#container.querySelector("table");
     let tbody = table ? table.querySelector("tbody") : null;
-    if (tbody) return tbody;
+    if (tbody !== null) return tbody;
     const fragment = tasktable.content.cloneNode(true);
-    this._container.appendChild(fragment);
-    table = this._container.querySelector("table");
+    this.#container.appendChild(fragment);
+    table = this.#container.querySelector("table");
     return table ? table.querySelector("tbody") : null;
   }
 
-  _createRow(task) {
+  #createRow(task) {
     const fragment = taskrow.content.cloneNode(true);
     const row = fragment.querySelector("tr");
     const taskIdString = String(task.id);
     row.dataset.id = taskIdString;
-    this._fillRowCells(row, task);
-    this._populateStatusSelect(row, task.id);
-    this._wireDeleteButton(row, task.id);
+    this.#fillRowCells(row, task);
+    this.#populateStatusSelect(row, task.id);
+    this.#wireDeleteButton(row, task.id);
     return row;
   }
 
-  _fillRowCells(row, task) {
+  #fillRowCells(row, task) {
     const cells = row.querySelectorAll("td");
     if (cells.length >= 2) {
       cells[0].textContent = task.title ?? "";
@@ -181,52 +183,47 @@ class TaskList extends HTMLElement {
     }
   }
 
-  _populateStatusSelect(row, taskId) {
+  #populateStatusSelect(row, taskId) {
     withElement(row.querySelector("select"), (select) => {
-      if (Array.isArray(this._allstatuses)) {
-        this._allstatuses.forEach((status) => {
+      if (Array.isArray(this.#allstatuses)) {
+        this.#allstatuses.forEach((status) => {
           select.appendChild(createOptionElement(status));
         });
       }
       select.addEventListener("change", () => {
         const value = select.value;
         if (value !== "0") {
-          this._changestatusCallbacks.forEach((cb) => cb(taskId, value));
+          this.#changestatusCallbacks.forEach((cb) => cb(taskId, value));
           select.value = "0";
         }
       });
     });
   }
 
-  _wireDeleteButton(row, taskId) {
+  #wireDeleteButton(row, taskId) {
     withElement(row.querySelector("button"), (button) => {
       button.addEventListener("click", () => {
-        this._deletetaskCallbacks.forEach((cb) => cb(taskId));
+        this.#deletetaskCallbacks.forEach((cb) => cb(taskId));
       });
     });
   }
 
-  _insertRowAtTop(tbody, row) {
-    if (tbody.firstChild) {
+  #insertRowAtTop(tbody, row) {
+    if (tbody.firstChild !== null) {
       tbody.insertBefore(row, tbody.firstChild);
     } else {
       tbody.appendChild(row);
     }
   }
 
-  _findRowById(id) {
-    const tbody = this._getExistingTbody();
-    if (!tbody) return null;
-    const targetId = String(id);
-    return (
-      Array.from(tbody.querySelectorAll("tr")).find(
-        (tr) => tr.dataset.id === targetId
-      ) || null
-    );
+  #findRowById(id) {
+    const tbody = this.#getExistingTbody();
+    return tbody ? tbody.querySelector(`tr[data-id="${id}"]`) : null;
   }
 
-  _getExistingTbody() {
-    const table = this._container.querySelector("table");
+
+  #getExistingTbody() {
+    const table = this.#container.querySelector("table");
     return table ? table.querySelector("tbody") : null;
   }
 }
