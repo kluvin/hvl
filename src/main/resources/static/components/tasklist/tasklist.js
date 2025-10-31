@@ -6,7 +6,7 @@ import {
 } from "../utils/dom.js";
 
 const template = document.createElement("template");
-template.innerText = `
+template.innerHTML = `
     <link rel="stylesheet" type="text/css" href="${new URL(
       "tasklist.css",
       import.meta.url
@@ -15,14 +15,14 @@ template.innerText = `
     <div id="tasklist"></div>`;
 
 const tasktable = document.createElement("template");
-tasktable.innerText = `
+tasktable.innerHTML = `
     <table>
         <thead><tr><th>Task</th><th>Status</th></tr></thead>
         <tbody></tbody>
     </table>`;
 
 const taskrow = document.createElement("template");
-taskrow.innerText = `
+taskrow.innerHTML = `
     <tr>
         <td></td>
         <td></td>

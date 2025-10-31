@@ -16,7 +16,7 @@ import {
 const template = document.createElement("template");
 const html = (strings, ...values) => String.raw({ raw: strings }, ...values);
 
-template.innerText = html`
+template.innerHTML = html`
   <link
     rel="stylesheet"
     type="text/css"
