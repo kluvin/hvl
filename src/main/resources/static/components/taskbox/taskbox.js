@@ -6,7 +6,7 @@ import {
 } from "../utils/dom.js";
 
 const template = document.createElement("template");
-template.innerText = `
+template.innerHTML = `
 <link rel="stylesheet" type="text/css"
 href="${new URL("taskbox.css", import.meta.url)}"/>
 <dialog>
@@ -61,7 +61,7 @@ class TaskBox extends HTMLElement {
 
   setStatuseslist(list) {
     withElement(this.#select, (select) => {
-      select.innerText = "";
+      select.textContent = "";
       if (Array.isArray(list)) {
         list.forEach((status) => {
           select.appendChild(createOptionElement(status));
