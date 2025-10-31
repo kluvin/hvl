@@ -16,7 +16,7 @@ import {
 const template = document.createElement("template");
 const html = (strings, ...values) => String.raw({ raw: strings }, ...values);
 
-template.innerHTML = html`
+template.innerText = html`
   <link
     rel="stylesheet"
     type="text/css"
@@ -34,23 +34,26 @@ template.innerHTML = html`
 `;
 
 class TaskView extends HTMLElement {
-	#message;
-	#button;
-	#tasklist;
-	#taskbox;
-	#serviceurl;
-	#wired; 
-	
+  #message = null;
+  #button = null;
+  #tasklist = null;
+  #taskbox = null;
+  #serviceurl = "./api";
+
   constructor() {
     super();
-	const shadow = this.attachShadow({mode: "closed"});
+    const shadow = this.attachShadow({ mode: "closed" });
     renderTemplate(shadow, template);
     this.#message = shadow.querySelector("#message p");
     this.#button = shadow.querySelector("#newtask button");
     this.#tasklist = shadow.querySelector("task-list");
     this.#taskbox = shadow.querySelector("task-box");
-    this.#serviceurl = this.getAttribute("data-serviceurl") || "./api";
-    this.#wired = false;
+    const { serviceurl } = this.dataset;
+    this.#serviceurl =
+      typeof serviceurl === "string" && serviceurl.length > 0
+        ? serviceurl
+        : "./api";
+    this.#wireCallbacks();
   }
 
   connectedCallback() {
@@ -59,13 +62,10 @@ class TaskView extends HTMLElement {
 
   async #load() {
     await this.#loadStatuses();
-    this.#wireCallbacks();
     await this.#loadTasks();
   }
 
   #wireCallbacks() {
-    if (this.#wired !== null) return;
-    this.#wired = true;
     this.#wireTaskListCallbacks();
     this.#wireNewTaskButton();
     this.#wireTaskBoxCallback();

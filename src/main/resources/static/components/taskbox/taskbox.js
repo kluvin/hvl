@@ -6,7 +6,7 @@ import {
 } from "../utils/dom.js";
 
 const template = document.createElement("template");
-template.innerHTML = `
+template.innerText = `
 <link rel="stylesheet" type="text/css"
 href="${new URL("taskbox.css", import.meta.url)}"/>
 <dialog>
@@ -25,26 +25,33 @@ placeholder="Task title" autofocus/>
 `;
 
 class TaskBox extends HTMLElement {
-	#shadow;
-	#dialog;
-	#close;
-    #input;
-    #select;
-    #submit;
-	#callbacks = [];
-		
+  #shadow = null;
+  #dialog = null;
+  #close = null;
+  #input = null;
+  #select = null;
+  #submit = null;
+  #callbacks = [];
+
   constructor() {
-	super();
-	this.#shadow = this.attachShadow({ mode: "closed" });
+    super();
+    this.#shadow = this.attachShadow({ mode: "closed" });
     renderTemplate(this.#shadow, template);
-    this.#cacheElements();
-    this.#wireEvents();
+    this.#dialog = this.#shadow.querySelector("dialog");
+    this.#close = this.#shadow.querySelector("span");
+    this.#input = this.#shadow.querySelector("input");
+    this.#select = this.#shadow.querySelector("select");
+    this.#submit = this.#shadow.querySelector("button[type=submit]");
+    this.#wireCloseControl();
+    this.#wireDialogCancel();
+    this.#wireSubmitAction();
   }
 
   show() {
-    withElement(this.#input, (input) => { this.#input.value = ""});
+    withElement(this.#input, (input) => {
+      input.value = "";
+    });
     withElement(this.#dialog, (dialog) => {
-	// withElement() checks for null already 
       if (typeof dialog.showModal === "function") {
         dialog.showModal();
         withElement(this.#input, (input) => input.focus());
@@ -53,7 +60,6 @@ class TaskBox extends HTMLElement {
   }
 
   setStatuseslist(list) {
-	// withElement() checks for null already 
     withElement(this.#select, (select) => {
       select.innerText = "";
       if (Array.isArray(list)) {
@@ -76,23 +82,13 @@ class TaskBox extends HTMLElement {
         dialog.close();
       }
     });
-	
-	if (this.#input) this.#input.value = "";
-	if (this.#select) this.#select.selectedIndex = 0;
-  }
 
-  #cacheElements() {
-    this.#dialog = this.#shadow.querySelector("dialog");
-    this.#close = this.#shadow.querySelector("span");
-    this.#input = this.#shadow.querySelector("input");
-    this.#select = this.#shadow.querySelector("select");
-    this.#submit = this.#shadow.querySelector("button[type=submit]");
-  }
-
-  #wireEvents() {
-    this.#wireCloseControl();
-    this.#wireDialogCancel();
-    this.#wireSubmitAction();
+    withElement(this.#input, (input) => {
+      input.value = "";
+    });
+    withElement(this.#select, (select) => {
+      select.selectedIndex = 0;
+    });
   }
 
   #wireCloseControl() {

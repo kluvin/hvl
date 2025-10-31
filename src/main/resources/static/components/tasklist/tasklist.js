@@ -6,22 +6,23 @@ import {
 } from "../utils/dom.js";
 
 const template = document.createElement("template");
-template.innerHTML = `
-    <link rel="stylesheet" type="text/css" href="${
-      new URL("tasklist.css", import.meta.url)
-    }"/>
+template.innerText = `
+    <link rel="stylesheet" type="text/css" href="${new URL(
+      "tasklist.css",
+      import.meta.url
+    )}"/>
 
     <div id="tasklist"></div>`;
 
 const tasktable = document.createElement("template");
-tasktable.innerHTML = `
+tasktable.innerText = `
     <table>
         <thead><tr><th>Task</th><th>Status</th></tr></thead>
         <tbody></tbody>
     </table>`;
 
 const taskrow = document.createElement("template");
-taskrow.innerHTML = `
+taskrow.innerText = `
     <tr>
         <td></td>
         <td></td>
@@ -38,20 +39,20 @@ taskrow.innerHTML = `
  * Manage view with list of tasks
  */
 class TaskList extends HTMLElement {
-	#container;
-	#allstatuses = [];
-	#changestatusCallbacks = [];
-	#deletetaskCallbacks = [];
-	
+  #container;
+  #allstatuses = [];
+  #changestatusCallbacks = [];
+  #deletetaskCallbacks = [];
+
   constructor() {
     super();
 
     /**
      * Fill inn rest of the code
      */
-	const shadow = this.attachShadow({ mode: "closed" });
-	renderTemplate(shadow, template);
-	this.#container = shadow.getElementById("tasklist");
+    const shadow = this.attachShadow({ mode: "closed" });
+    renderTemplate(shadow, template);
+    this.#container = shadow.getElementById("tasklist");
   }
 
   /**
@@ -135,9 +136,9 @@ class TaskList extends HTMLElement {
     withElement(this.#getExistingTbody(), (tbody) => {
       withElement(this.#findRowById(id), (row) => {
         row.remove();
-		if (tbody.rows.length === 0) {
-		  this.#container.innerHTML = "";
-		}
+        if (tbody.rows.length === 0) {
+          this.#container.innerText = "";
+        }
       });
     });
   }
@@ -150,9 +151,9 @@ class TaskList extends HTMLElement {
     /**
      * Fill inn the code
      */
-	const tbody = this.#getExistingTbody();
-	return tbody ? tbody.rows.length : 0;
-	}
+    const tbody = this.#getExistingTbody();
+    return tbody ? tbody.rows.length : 0;
+  }
 
   #ensureTableBody() {
     let table = this.#container.querySelector("table");
@@ -220,7 +221,6 @@ class TaskList extends HTMLElement {
     const tbody = this.#getExistingTbody();
     return tbody ? tbody.querySelector(`tr[data-id="${id}"]`) : null;
   }
-
 
   #getExistingTbody() {
     const table = this.#container.querySelector("table");
