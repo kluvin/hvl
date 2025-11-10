@@ -5,8 +5,9 @@ import {
   withElement,
 } from "../utils/dom.js";
 
+const html = (strings, ...values) => String.raw({ raw: strings }, ...values);
 const template = document.createElement("template");
-template.innerHTML = `
+template.innerHTML = html`
     <link rel="stylesheet" type="text/css" href="${new URL(
       "tasklist.css",
       import.meta.url
@@ -15,14 +16,14 @@ template.innerHTML = `
     <div id="tasklist"></div>`;
 
 const tasktable = document.createElement("template");
-tasktable.innerHTML = `
+tasktable.innerHTML = html`
     <table>
         <thead><tr><th>Task</th><th>Status</th></tr></thead>
         <tbody></tbody>
     </table>`;
 
 const taskrow = document.createElement("template");
-taskrow.innerHTML = `
+taskrow.innerHTML = html`
     <tr>
         <td></td>
         <td></td>
@@ -152,17 +153,17 @@ class TaskList extends HTMLElement {
      * Fill inn the code
      */
     const tbody = this.#getExistingTbody();
-    return tbody ? tbody.rows.length : 0;
+    return tbody !== null ? tbody.rows.length : 0;
   }
 
   #ensureTableBody() {
     let table = this.#container.querySelector("table");
-    let tbody = table ? table.querySelector("tbody") : null;
+    let tbody = table !== null ? table.querySelector("tbody") : null;
     if (tbody !== null) return tbody;
     const fragment = tasktable.content.cloneNode(true);
     this.#container.appendChild(fragment);
     table = this.#container.querySelector("table");
-    return table ? table.querySelector("tbody") : null;
+    return table !== null ? table.querySelector("tbody") : null;
   }
 
   #createRow(task) {
@@ -185,21 +186,26 @@ class TaskList extends HTMLElement {
   }
 
   #populateStatusSelect(row, taskId) {
-    withElement(row.querySelector("select"), (select) => {
-      if (Array.isArray(this.#allstatuses)) {
-        this.#allstatuses.forEach((status) => {
-          select.appendChild(createOptionElement(status));
-        });
-      }
-      select.addEventListener("change", () => {
-        const value = select.value;
-        if (value !== "0") {
-          this.#changestatusCallbacks.forEach((cb) => cb(taskId, value));
-          select.value = "0";
+      withElement(row.querySelector("select"), (select) => {
+        if (Array.isArray(this.#allstatuses)) {
+          this.#allstatuses.forEach((status) => {
+            select.appendChild(createOptionElement(status));
+          });
         }
+        select.addEventListener("change", () => {
+          const value = select.value;
+          const currentStatusCell = row.querySelectorAll("td")[1];
+          const current = currentStatusCell.textContent;
+          if (value !== "0" && value !== current) {
+            this.#changestatusCallbacks.forEach((cb) => cb(taskId, value));
+            select.value = "0";
+            return;
+          }
+          select.value = "0";
+          return;
+        });
       });
-    });
-  }
+    }
 
   #wireDeleteButton(row, taskId) {
     withElement(row.querySelector("button"), (button) => {
@@ -219,12 +225,12 @@ class TaskList extends HTMLElement {
 
   #findRowById(id) {
     const tbody = this.#getExistingTbody();
-    return tbody ? tbody.querySelector(`tr[data-id="${id}"]`) : null;
+    return tbody !== null ? tbody.querySelector(`tr[data-id="${id}"]`) : null;
   }
 
   #getExistingTbody() {
     const table = this.#container.querySelector("table");
-    return table ? table.querySelector("tbody") : null;
+    return table !== null ? table.querySelector("tbody") : null;
   }
 }
 registerComponent("task-list", TaskList);

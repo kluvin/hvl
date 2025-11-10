@@ -5,8 +5,9 @@ import {
   withElement,
 } from "../utils/dom.js";
 
+const html = (strings, ...values) => String.raw({ raw: strings }, ...values);
 const template = document.createElement("template");
-template.innerHTML = `
+template.innerHTML = html`
 <link rel="stylesheet" type="text/css"
 href="${new URL("taskbox.css", import.meta.url)}"/>
 <dialog>
@@ -109,7 +110,8 @@ class TaskBox extends HTMLElement {
 
   #wireSubmitAction() {
     withElement(this.#submit, (submitButton) => {
-      submitButton.addEventListener("click", () => {
+      submitButton.addEventListener("click", (event) => {
+        event.preventDefault();
         this.#handleSubmit();
       });
     });

@@ -82,7 +82,7 @@ class TaskView extends HTMLElement {
   async #deleteTask(id) {
     if (!confirm("Are you sure you want to delete this task?")) return;
     const success = await deleteTask(this.#serviceurl, id);
-    if (success !== null) {
+    if (success) {
       this.#tasklist.removeTask(id);
       this.#refreshTaskCount();
     }
@@ -99,7 +99,7 @@ class TaskView extends HTMLElement {
 
   async #loadStatuses() {
     const statuses = await getStatuses(this.#serviceurl);
-    if (statuses) {
+    if (Array.isArray(statuses)) {
       this.#applyStatuses(statuses);
     }
   }
